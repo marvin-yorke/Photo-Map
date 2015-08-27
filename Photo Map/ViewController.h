@@ -14,13 +14,9 @@
 @interface ViewController : UIViewController <MKMapViewDelegate>
 {
     MKMapView *_allAnnotationsMapView;
-    ALAssetsLibrary *assetsLibrary;
-    NSMutableArray *assets;
 }
 
 @property (strong, nonatomic) NSArray *photos;
-@property (nonatomic) BOOL assetsLoaded;
-
 @property (weak, nonatomic) IBOutlet MKMapView *mapView;
 
 @end

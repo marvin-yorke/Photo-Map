@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		585EA0B31B8E4F8F008A2560 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 585EA0B21B8E4F8F008A2560 /* CoreLocation.framework */; };
+		585EA0B51B8EEF28008A2560 /* Storyboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 585EA0B41B8EEF28008A2560 /* Storyboard.storyboard */; };
+		585EA0B81B8EEFAE008A2560 /* AnnotationView.m in Sources */ = {isa = PBXBuildFile; fileRef = 585EA0B71B8EEFAE008A2560 /* AnnotationView.m */; };
+		585EA0BA1B8F0166008A2560 /* USA-HotelMotel.csv in Resources */ = {isa = PBXBuildFile; fileRef = 585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */; };
+		585EA0BC1B8F1E25008A2560 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */; };
 		BBA8C3FF177C90D8009C57AE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C3FE177C90D8009C57AE /* UIKit.framework */; };
 		BBA8C401177C90D8009C57AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C400177C90D8009C57AE /* Foundation.framework */; };
 		BBA8C403177C90D8009C57AE /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C402177C90D8009C57AE /* CoreGraphics.framework */; };
@@ -17,7 +22,6 @@
 		BBA8C413177C90D8009C57AE /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = BBA8C412177C90D8009C57AE /* Default@2x.png */; };
 		BBA8C415177C90D8009C57AE /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = BBA8C414177C90D8009C57AE /* Default-568h@2x.png */; };
 		BBA8C418177C90D8009C57AE /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = BBA8C417177C90D8009C57AE /* ViewController.m */; };
-		BBA8C41B177C90D8009C57AE /* ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = BBA8C419177C90D8009C57AE /* ViewController.xib */; };
 		BBA8C422177C90FD009C57AE /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C421177C90FD009C57AE /* MapKit.framework */; };
 		BBA8C424177C97DE009C57AE /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C423177C97DE009C57AE /* ImageIO.framework */; };
 		BBA8C427177DA59C009C57AE /* PhotosViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = BBA8C426177DA59C009C57AE /* PhotosViewController.m */; };
@@ -26,6 +30,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		585EA0B21B8E4F8F008A2560 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		585EA0B41B8EEF28008A2560 /* Storyboard.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = Storyboard.storyboard; path = "Photo Map/Storyboard.storyboard"; sourceTree = "<group>"; };
+		585EA0B61B8EEFAE008A2560 /* AnnotationView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnnotationView.h; sourceTree = "<group>"; };
+		585EA0B71B8EEFAE008A2560 /* AnnotationView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnnotationView.m; sourceTree = "<group>"; };
+		585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "USA-HotelMotel.csv"; sourceTree = "<group>"; };
+		585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		BBA8C3FB177C90D8009C57AE /* Photo Map.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Photo Map.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BBA8C3FE177C90D8009C57AE /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		BBA8C400177C90D8009C57AE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -41,7 +51,6 @@
 		BBA8C414177C90D8009C57AE /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		BBA8C416177C90D8009C57AE /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		BBA8C417177C90D8009C57AE /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		BBA8C41A177C90D8009C57AE /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController.xib; sourceTree = "<group>"; };
 		BBA8C421177C90FD009C57AE /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
 		BBA8C423177C97DE009C57AE /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
 		BBA8C425177DA59C009C57AE /* PhotosViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhotosViewController.h; sourceTree = "<group>"; };
@@ -56,6 +65,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				585EA0BC1B8F1E25008A2560 /* QuartzCore.framework in Frameworks */,
+				585EA0B31B8E4F8F008A2560 /* CoreLocation.framework in Frameworks */,
 				BBA8C42D177DEB85009C57AE /* AssetsLibrary.framework in Frameworks */,
 				BBA8C424177C97DE009C57AE /* ImageIO.framework in Frameworks */,
 				BBA8C422177C90FD009C57AE /* MapKit.framework in Frameworks */,
@@ -71,6 +82,7 @@
 		BBA8C3F2177C90D8009C57AE = {
 			isa = PBXGroup;
 			children = (
+				585EA0B41B8EEF28008A2560 /* Storyboard.storyboard */,
 				BBA8C404177C90D8009C57AE /* Photo Map */,
 				BBA8C3FD177C90D8009C57AE /* Frameworks */,
 				BBA8C3FC177C90D8009C57AE /* Products */,
@@ -88,6 +100,8 @@
 		BBA8C3FD177C90D8009C57AE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */,
+				585EA0B21B8E4F8F008A2560 /* CoreLocation.framework */,
 				BBA8C42C177DEB85009C57AE /* AssetsLibrary.framework */,
 				BBA8C423177C97DE009C57AE /* ImageIO.framework */,
 				BBA8C421177C90FD009C57AE /* MapKit.framework */,
@@ -105,10 +119,11 @@
 				BBA8C40E177C90D8009C57AE /* AppDelegate.m */,
 				BBA8C416177C90D8009C57AE /* ViewController.h */,
 				BBA8C417177C90D8009C57AE /* ViewController.m */,
-				BBA8C419177C90D8009C57AE /* ViewController.xib */,
 				BBA8C405177C90D8009C57AE /* Supporting Files */,
 				DF3C438D177CE04900C03AE4 /* PhotoAnnotation.h */,
 				DF3C438E177CE04A00C03AE4 /* PhotoAnnotation.m */,
+				585EA0B61B8EEFAE008A2560 /* AnnotationView.h */,
+				585EA0B71B8EEFAE008A2560 /* AnnotationView.m */,
 				BBA8C425177DA59C009C57AE /* PhotosViewController.h */,
 				BBA8C426177DA59C009C57AE /* PhotosViewController.m */,
 			);
@@ -118,6 +133,7 @@
 		BBA8C405177C90D8009C57AE /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */,
 				BBA8C406177C90D8009C57AE /* Photo Map-Info.plist */,
 				BBA8C407177C90D8009C57AE /* InfoPlist.strings */,
 				BBA8C40A177C90D8009C57AE /* main.m */,
@@ -183,8 +199,9 @@
 				BBA8C409177C90D8009C57AE /* InfoPlist.strings in Resources */,
 				BBA8C411177C90D8009C57AE /* Default.png in Resources */,
 				BBA8C413177C90D8009C57AE /* Default@2x.png in Resources */,
+				585EA0BA1B8F0166008A2560 /* USA-HotelMotel.csv in Resources */,
 				BBA8C415177C90D8009C57AE /* Default-568h@2x.png in Resources */,
-				BBA8C41B177C90D8009C57AE /* ViewController.xib in Resources */,
+				585EA0B51B8EEF28008A2560 /* Storyboard.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -196,6 +213,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BBA8C40B177C90D8009C57AE /* main.m in Sources */,
+				585EA0B81B8EEFAE008A2560 /* AnnotationView.m in Sources */,
 				BBA8C40F177C90D8009C57AE /* AppDelegate.m in Sources */,
 				BBA8C418177C90D8009C57AE /* ViewController.m in Sources */,
 				DF3C438F177CE04A00C03AE4 /* PhotoAnnotation.m in Sources */,
@@ -212,14 +230,6 @@
 				BBA8C408177C90D8009C57AE /* en */,
 			);
 			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		BBA8C419177C90D8009C57AE /* ViewController.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				BBA8C41A177C90D8009C57AE /* en */,
-			);
-			name = ViewController.xib;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -287,7 +297,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Photo Map/Photo Map-Prefix.pch";
 				INFOPLIST_FILE = "Photo Map/Photo Map-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -298,7 +310,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Photo Map/Photo Map-Prefix.pch";
 				INFOPLIST_FILE = "Photo Map/Photo Map-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

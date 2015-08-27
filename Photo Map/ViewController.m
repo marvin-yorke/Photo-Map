@@ -6,9 +6,13 @@
 //  Copyright (c) 2013 Alex Shevlyakov. All rights reserved.
 //
 
+#import <MapKit/MapKit.h>
 #import "ViewController.h"
 #import "PhotoAnnotation.h"
+#import "AnnotationView.h"
 #import "PhotosViewController.h"
+
+#define PINS_COUNT 30000
 
 @implementation ViewController
 
@@ -16,8 +20,7 @@
 {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
-        _assetsLoaded = NO;
-        assetsLibrary = [[ALAssetsLibrary alloc] init];    
+
     }
     return self;
 }
@@ -27,134 +30,31 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-//    MKCoordinateRegion region = { { 36.102376, -119.091797 }, { 32.451446, 28.125000 } };
-//    self.mapView.region = region;
-    
+
     _allAnnotationsMapView = [[MKMapView alloc] initWithFrame:CGRectZero];
-    [self loadAssets];
-}
-
--(void)viewDidAppear:(BOOL)animated
-{
-    [super viewDidAppear:animated];
-}
-
-- (void)didReceiveMemoryWarning
-{
-    [super didReceiveMemoryWarning];
-}
-
-- (void)setAssetsLoaded:(BOOL)assetsLoaded
-{
-    _assetsLoaded = assetsLoaded;
-    if (_assetsLoaded) {
-        [self populateWorldWithAllPhotoAnnotations];
-    }
-}
-
-- (void)loadAssets
-{
-    self.assetsLoaded = NO;
-    if (!assets) {
-        assets = [[NSMutableArray alloc] init];
-    } else {
-        [assets removeAllObjects];
-    }
     
-    void (^assetEnumerator)(ALAsset *, NSUInteger, BOOL *) = ^(ALAsset *result, NSUInteger index, BOOL *stop) {
-        if(result != nil) {
-            [assets addObject:result];
-        }
-    };
-    
-    ALAssetsLibraryGroupsEnumerationResultsBlock listGroupBlock = ^(ALAssetsGroup *group, BOOL *stop) {
-        if (group != nil) {
-            [group enumerateAssetsUsingBlock:assetEnumerator];
-        } else {
-            self.assetsLoaded = YES;
-        }
-    };
-    
-    ALAssetsLibraryAccessFailureBlock failureBlock = ^(NSError *error) {
-        NSString *errorMessage = nil;
-        switch ([error code]) {
-            case ALAssetsLibraryAccessUserDeniedError:
-            case ALAssetsLibraryAccessGloballyDeniedError:
-                errorMessage = @"The user has declined access to it.";
-                break;
-            default:
-                errorMessage = @"Reason unknown.";
-                break;
-        }
-        NSLog(@"Assets Library access failure: %@", errorMessage);
-    };
-    
-    NSUInteger groupTypes = ALAssetsGroupSavedPhotos | ALAssetsGroupAlbum | ALAssetsGroupEvent;
-    [assetsLibrary enumerateGroupsWithTypes:groupTypes usingBlock:listGroupBlock failureBlock:failureBlock];
-}
-
-- (NSArray *)photosAnnotations
-{    
-    NSMutableArray *photos;
-    NSString *archivePath = @"device_photos.archive";
-    photos = [NSKeyedUnarchiver unarchiveObjectWithFile:archivePath];
-    if (photos) {
-        return photos;
-    } else {
-        photos = [NSMutableArray array];
-    }
-    
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [queue setMaxConcurrentOperationCount:8];
-    
-    for (ALAsset *asset in assets) {
-        [queue addOperationWithBlock:^{
-        
-            ALAssetRepresentation *representation = [asset defaultRepresentation];
-            NSDictionary *metadata = [representation metadata];
-            NSDictionary *gpsDict = [metadata objectForKey:@"{GPS}"];
-            
-            if (gpsDict == nil)
-                return;
-            
-            NSNumber *latitudeNumber = [gpsDict objectForKey:@"Latitude"];
-            NSString *latitudeRef = [gpsDict objectForKey:@"LatitudeRef"];
-            
-            NSNumber *longitudeNumber = [gpsDict objectForKey:@"Longitude"];
-            NSString *longitudeRef = [gpsDict objectForKey:@"LongitudeRef"];
-            
-            if (latitudeNumber == nil || longitudeNumber == nil)
-                return;
-            
-            CLLocationCoordinate2D coord;
-            coord.latitude  = latitudeNumber.doubleValue;
-			coord.longitude = longitudeNumber.doubleValue;
-            
-            if ([latitudeRef  isEqualToString:@"S"]) coord.latitude  *= -1;
-            if ([longitudeRef isEqualToString:@"W"]) coord.longitude *= -1;
-
-            NSString *filename = [representation filename];
-            PhotoAnnotation *photo = [[PhotoAnnotation alloc] initWithImagePath:representation.url.path title:filename coordinate:coord];
-            
-            NSLog(@"Asset: %@", asset.description);
-            
-            @synchronized(photos) {
-                [photos addObject:photo];
-            }
-        }];
-    }
-    [queue waitUntilAllOperationsAreFinished];
-    
-    [NSKeyedArchiver archiveRootObject:photos toFile:archivePath];
-    
-    return photos;
+    [self populateWorldWithAllPhotoAnnotations];
 }
 
 - (void)populateWorldWithAllPhotoAnnotations
 {    
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    	self.photos = [self photosAnnotations];
+    	
+        NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:PINS_COUNT];
+        for (int i=0; i<PINS_COUNT; i++) {
+            float lat = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
+            float lon = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
+            
+            PhotoAnnotation *a = [[PhotoAnnotation alloc] init];
+            a.coordinate = CLLocationCoordinate2DMake(lat, lon);
+            a.actualCoordinate = a.coordinate;
+            a.mapPoint = MKMapPointForCoordinate(a.coordinate);
+            
+            [array addObject:a];
+        }
         
+        self.photos = [array copy];
+
         dispatch_async(dispatch_get_main_queue(), ^{
         	[_allAnnotationsMapView addAnnotations:self.photos];
             [self updateVisibleAnnotations];
@@ -181,11 +81,8 @@
     // then choose the one closest to the center to show
     MKMapPoint centerMapPoint = MKMapPointMake(MKMapRectGetMidX(gridMapRect), MKMapRectGetMidY(gridMapRect));
     NSArray *sortedAnnotations = [[annotations allObjects] sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-        MKMapPoint mapPoint1 = MKMapPointForCoordinate( ((id<MKAnnotation>)obj1).coordinate );
-        MKMapPoint mapPoint2 = MKMapPointForCoordinate( ((id<MKAnnotation>)obj2).coordinate );
-        
-        CLLocationDistance distance1 = MKMetersBetweenMapPoints(mapPoint1, centerMapPoint);
-        CLLocationDistance distance2 = MKMetersBetweenMapPoints(mapPoint2, centerMapPoint);
+        CLLocationDistance distance1 = MKMetersBetweenMapPoints(((PhotoAnnotation *)obj1).mapPoint, centerMapPoint);
+        CLLocationDistance distance2 = MKMetersBetweenMapPoints(((PhotoAnnotation *)obj2).mapPoint, centerMapPoint);
         
         if (distance1 < distance2) {
             return NSOrderedAscending;
@@ -199,18 +96,18 @@
     return [sortedAnnotations objectAtIndex:0];
 }
 
-
 - (void)updateVisibleAnnotations {
     // Fix performance and visual clutter by calling update when we change map regions
     // This value to controls the number of off screen annotations are displayed.
     // A bigger number means more annotations, less chance of seeing annotation views pop in but decreased performance.
     // A smaller number means fewer annotations, more chance of seeing annotation views pop in but better performance.
-    static float marginFactor = 2.0;
+    const float marginFactor = 1.0;
     
     // Adjust this roughly based on the dimensions of your annotations views.
     // Bigger numbers more aggressively coalesce annotations (fewer annotations displayed but better performance).
     // Numbers too small result in overlapping annotations views and too many annotations on screen.
-    static float bucketSize = 60.0;
+    const float bucketSize = [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone ? [UIScreen mainScreen].bounds.size.width / 4 :
+    [UIScreen mainScreen].bounds.size.width / 6;
     
     // Find all the annotations in the visible area + a wide margin to avoid popping annotation views in and out while panning the map.
     MKMapRect visibleMapRect = [self.mapView visibleMapRect];
@@ -228,32 +125,27 @@
     double endX   = floor(MKMapRectGetMaxX(adjustedVisibleMapRect) / gridSize) * gridSize;
     double endY   = floor(MKMapRectGetMaxY(adjustedVisibleMapRect) / gridSize) * gridSize;
     
+    NSMutableSet *annotationsToDelete = [[NSMutableSet alloc] initWithCapacity:self.mapView.annotations.count];
+    
     // For each square in our grid, pick one annotation to show
-    gridMapRect.origin.y = startY;
-    while (MKMapRectGetMinY(gridMapRect) <= endY) {
-        gridMapRect.origin.x = startX;
-        
-        while (MKMapRectGetMinX(gridMapRect) <= endX) {
-            NSSet *allAnnotationsInBucket = [_allAnnotationsMapView annotationsInMapRect:gridMapRect];
+    for (gridMapRect.origin.y = startY; MKMapRectGetMinY(gridMapRect) <= endY; gridMapRect.origin.y += gridSize) {
+        for (gridMapRect.origin.x = startX; MKMapRectGetMinX(gridMapRect) <= endX; gridMapRect.origin.x += gridSize) {
+            
             NSSet *visibleAnnotationsInBucket = [self.mapView annotationsInMapRect:gridMapRect];
+            NSMutableSet *allAnnotationsInBucket = [[_allAnnotationsMapView annotationsInMapRect:gridMapRect] mutableCopy];
             
-            // We only care about PhotoAnnotations
-            NSMutableSet *filteredAnnotationsInBucket = [[allAnnotationsInBucket objectsPassingTest:^BOOL(id obj, BOOL *stop) {
-                return ([obj isKindOfClass:[PhotoAnnotation class]]);
-            }] mutableCopy];
-            
-            if (filteredAnnotationsInBucket.count > 0) {
-                PhotoAnnotation *annotationForGrid = (PhotoAnnotation *)[self annotationInGrid:gridMapRect usingAnnotations:filteredAnnotationsInBucket];
+            if (allAnnotationsInBucket.count > 0) {
+                PhotoAnnotation *annotationForGrid = (PhotoAnnotation *)[self annotationInGrid:gridMapRect
+                                                                              usingAnnotations:allAnnotationsInBucket];
                 
-                [filteredAnnotationsInBucket removeObject:annotationForGrid];
+                [allAnnotationsInBucket removeObject:annotationForGrid];
                 
                 // Give the annotationForGrid a reference to all the annotations it will represent
-                annotationForGrid.containedAnnotations = [filteredAnnotationsInBucket allObjects];
+                annotationForGrid.containedAnnotations = [allAnnotationsInBucket allObjects];
                 
                 [self.mapView addAnnotation:annotationForGrid];
                 
-                
-                for (PhotoAnnotation *annotation in filteredAnnotationsInBucket) {
+                for (PhotoAnnotation *annotation in allAnnotationsInBucket) {
                     // Give all the other annotations a reference to the one which is representing them
                     annotation.clusterAnnotation = annotationForGrid;
                     annotation.containedAnnotations = nil;
@@ -272,10 +164,7 @@
                     }
                 }
             }
-            
-            gridMapRect.origin.x += gridSize;
         }
-        gridMapRect.origin.y += gridSize;
     }
 }
 
@@ -293,37 +182,49 @@
         return nil;
     
     if ([annotation isKindOfClass:[PhotoAnnotation class]]) {
-    	MKPinAnnotationView *annotationView = (MKPinAnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:@"Photo"];
+    	AnnotationView *annotationView = (AnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:@"Photo"];
         if (annotationView == nil)
-            annotationView = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"Photo"];
-        
-        annotationView.canShowCallout = YES;
-        
-        UIButton *disclosureButton = [UIButton buttonWithType:UIButtonTypeDetailDisclosure];
-        annotationView.rightCalloutAccessoryView = disclosureButton;
+            annotationView = [[AnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:@"Photo"];
         
         return annotationView;
     }
     return nil;
 }
 
-- (void)mapView:(MKMapView *)mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl *)control
+- (void)addBounceAnnimationToView:(UIView *)view
 {
-    if (![view.annotation isKindOfClass:[PhotoAnnotation class]])
-        return;
+    CAKeyframeAnimation *bounceAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.scale"];
     
-    PhotoAnnotation *annotation = (PhotoAnnotation *)view.annotation;
+    bounceAnimation.values = @[@(0.05), @(1.1), @(0.9), @(1)];
     
-    NSMutableArray *photosToShow = [NSMutableArray arrayWithObject:annotation];
-    [photosToShow addObjectsFromArray:annotation.containedAnnotations];
+    bounceAnimation.duration = 0.6;
+    NSMutableArray *timingFunctions = [[NSMutableArray alloc] initWithCapacity:bounceAnimation.values.count];
+    for (NSUInteger i = 0; i < bounceAnimation.values.count; i++) {
+        [timingFunctions addObject:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
+    }
+    [bounceAnimation setTimingFunctions:timingFunctions.copy];
+    bounceAnimation.removedOnCompletion = NO;
     
-    PhotosViewController *viewController = [[PhotosViewController alloc] init];
-    viewController.photos = photosToShow;
-    [self.navigationController pushViewController:viewController animated:YES];
+    [view.layer addAnimation:bounceAnimation forKey:@"bounce"];
 }
 
 - (void)mapView:(MKMapView *)mapView didAddAnnotationViews:(NSArray *)views
 {
+//    for (MKAnnotationView *annotationView in views) {
+//        if (![annotationView.annotation isKindOfClass:[PhotoAnnotation class]])
+//            continue;
+//        
+//        PhotoAnnotation *annotation = (PhotoAnnotation *)annotationView.annotation;
+//        
+//        if (annotation.clusterAnnotation != nil) {
+//            annotation.clusterAnnotation = nil;
+//            
+//            annotation.coordinate = annotation.actualCoordinate;
+//            
+//            [self addBounceAnnimationToView:annotationView];
+//        }
+//    }
+    
     for (MKAnnotationView *annotationView in views) {
         if (![annotationView.annotation isKindOfClass:[PhotoAnnotation class]])
             continue;
@@ -339,7 +240,7 @@
             annotation.coordinate = containerCoordinate;
             
             [UIView animateWithDuration:0.3 animations:^{
-            	annotation.coordinate = actualCoordinate;
+                annotation.coordinate = actualCoordinate;
             }];
         }
     }

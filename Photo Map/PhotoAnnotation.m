@@ -16,8 +16,6 @@ static NSString *ASCPhotoAnnotationLatitude   = @"ASCPhotoAnnotationLatitude";
 static NSString *ASCPhotoAnnotationLongitude  = @"ASCPhotoAnnotationLongitude";
 
 - (void)encodeWithCoder:(NSCoder *)aCoder {
-    [aCoder encodeObject:self.imagePath forKey:ASCPhotoAnnotationImagePath];
-    [aCoder encodeObject:self.title forKey:ASCPhotoAnnotationTitle];
     [aCoder encodeDouble:latitude forKey:ASCPhotoAnnotationLatitude];
     [aCoder encodeDouble:longitude forKey:ASCPhotoAnnotationLongitude];
 }
@@ -25,9 +23,6 @@ static NSString *ASCPhotoAnnotationLongitude  = @"ASCPhotoAnnotationLongitude";
 - (id)initWithCoder:(NSCoder *)aDecoder {
     self = [super init];
     if (self) {
-        self.imagePath = [aDecoder decodeObjectForKey:ASCPhotoAnnotationImagePath];
-        self.title = [aDecoder decodeObjectForKey:ASCPhotoAnnotationTitle];
-        
         double aLatitude  = [aDecoder decodeDoubleForKey:ASCPhotoAnnotationLatitude];
         double aLongitude = [aDecoder decodeDoubleForKey:ASCPhotoAnnotationLongitude];
         CLLocationCoordinate2D coord;
@@ -42,8 +37,6 @@ static NSString *ASCPhotoAnnotationLongitude  = @"ASCPhotoAnnotationLongitude";
 - (id)initWithImagePath:(NSString *)imagePath title:(NSString *)title coordinate:(CLLocationCoordinate2D)coord {
     self = [super init];
     if (self) {
-        self.imagePath = imagePath;
-        self.title = title;
         self.coordinate = coord;
     }
     return self;
