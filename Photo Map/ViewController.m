@@ -41,15 +41,35 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     	
         NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:PINS_COUNT];
-        for (int i=0; i<PINS_COUNT; i++) {
-            float lat = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
-            float lon = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
+//        for (int i=0; i<PINS_COUNT; i++) {
+//            float lat = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
+//            float lon = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
+//            
+//            PhotoAnnotation *a = [[PhotoAnnotation alloc] init];
+//            a.coordinate = CLLocationCoordinate2DMake(lat, lon);
+//            a.actualCoordinate = a.coordinate;
+//            a.mapPoint = MKMapPointForCoordinate(a.coordinate);
+//            
+//            [array addObject:a];
+//        }
+        
+        NSString *data = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"USA-HotelMotel" ofType:@"csv"] encoding:NSASCIIStringEncoding error:nil];
+        NSArray *lines = [data componentsSeparatedByString:@"\n"];
+        
+        NSInteger count = lines.count - 1;
+        
+        for (NSInteger i = 0; i < count; i+=2) { // do 40k points
+            NSString *line = lines[i];
+            
+            NSArray *components = [line componentsSeparatedByString:@","];
+            double latitude = [components[1] doubleValue];
+            double longitude = [components[0] doubleValue];
             
             PhotoAnnotation *a = [[PhotoAnnotation alloc] init];
-            a.coordinate = CLLocationCoordinate2DMake(lat, lon);
+            a.coordinate = CLLocationCoordinate2DMake(latitude, longitude);
             a.actualCoordinate = a.coordinate;
             a.mapPoint = MKMapPointForCoordinate(a.coordinate);
-            
+
             [array addObject:a];
         }
         
@@ -210,21 +230,6 @@
 
 - (void)mapView:(MKMapView *)mapView didAddAnnotationViews:(NSArray *)views
 {
-//    for (MKAnnotationView *annotationView in views) {
-//        if (![annotationView.annotation isKindOfClass:[PhotoAnnotation class]])
-//            continue;
-//        
-//        PhotoAnnotation *annotation = (PhotoAnnotation *)annotationView.annotation;
-//        
-//        if (annotation.clusterAnnotation != nil) {
-//            annotation.clusterAnnotation = nil;
-//            
-//            annotation.coordinate = annotation.actualCoordinate;
-//            
-//            [self addBounceAnnimationToView:annotationView];
-//        }
-//    }
-    
     for (MKAnnotationView *annotationView in views) {
         if (![annotationView.annotation isKindOfClass:[PhotoAnnotation class]])
             continue;
@@ -237,11 +242,9 @@
             CLLocationCoordinate2D containerCoordinate = annotation.clusterAnnotation.coordinate;
             
             annotation.clusterAnnotation = nil;
-            annotation.coordinate = containerCoordinate;
+            annotation.coordinate = actualCoordinate;
             
-            [UIView animateWithDuration:0.3 animations:^{
-                annotation.coordinate = actualCoordinate;
-            }];
+            [self addBounceAnnimationToView:annotationView];
         }
     }
 }
