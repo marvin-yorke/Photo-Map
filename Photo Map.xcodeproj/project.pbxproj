@@ -12,6 +12,7 @@
 		585EA0B81B8EEFAE008A2560 /* AnnotationView.m in Sources */ = {isa = PBXBuildFile; fileRef = 585EA0B71B8EEFAE008A2560 /* AnnotationView.m */; };
 		585EA0BA1B8F0166008A2560 /* USA-HotelMotel.csv in Resources */ = {isa = PBXBuildFile; fileRef = 585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */; };
 		585EA0BC1B8F1E25008A2560 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */; };
+		585EA0BE1B8F41D3008A2560 /* data.json in Resources */ = {isa = PBXBuildFile; fileRef = 585EA0BD1B8F41D3008A2560 /* data.json */; };
 		BBA8C3FF177C90D8009C57AE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C3FE177C90D8009C57AE /* UIKit.framework */; };
 		BBA8C401177C90D8009C57AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C400177C90D8009C57AE /* Foundation.framework */; };
 		BBA8C403177C90D8009C57AE /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C402177C90D8009C57AE /* CoreGraphics.framework */; };
@@ -36,6 +37,7 @@
 		585EA0B71B8EEFAE008A2560 /* AnnotationView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AnnotationView.m; sourceTree = "<group>"; };
 		585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "USA-HotelMotel.csv"; sourceTree = "<group>"; };
 		585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		585EA0BD1B8F41D3008A2560 /* data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = data.json; sourceTree = SOURCE_ROOT; };
 		BBA8C3FB177C90D8009C57AE /* Photo Map.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Photo Map.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BBA8C3FE177C90D8009C57AE /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		BBA8C400177C90D8009C57AE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -133,6 +135,7 @@
 		BBA8C405177C90D8009C57AE /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				585EA0BD1B8F41D3008A2560 /* data.json */,
 				585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */,
 				BBA8C406177C90D8009C57AE /* Photo Map-Info.plist */,
 				BBA8C407177C90D8009C57AE /* InfoPlist.strings */,
@@ -197,6 +200,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BBA8C409177C90D8009C57AE /* InfoPlist.strings in Resources */,
+				585EA0BE1B8F41D3008A2560 /* data.json in Resources */,
 				BBA8C411177C90D8009C57AE /* Default.png in Resources */,
 				BBA8C413177C90D8009C57AE /* Default@2x.png in Resources */,
 				585EA0BA1B8F0166008A2560 /* USA-HotelMotel.csv in Resources */,

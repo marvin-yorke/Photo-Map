@@ -53,30 +53,46 @@
 //            [array addObject:a];
 //        }
         
-        NSString *data = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"USA-HotelMotel" ofType:@"csv"] encoding:NSASCIIStringEncoding error:nil];
-        NSArray *lines = [data componentsSeparatedByString:@"\n"];
+//        NSString *data = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"USA-HotelMotel" ofType:@"csv"] encoding:NSASCIIStringEncoding error:nil];
+//        NSArray *lines = [data componentsSeparatedByString:@"\n"];
+//        
+//        NSInteger count = lines.count - 1;
+//        
+//        for (NSInteger i = 0; i < count; i+=2) { // do 40k points
+//            NSString *line = lines[i];
+//            
+//            NSArray *components = [line componentsSeparatedByString:@","];
+//            double latitude = [components[1] doubleValue];
+//            double longitude = [components[0] doubleValue];
+//            
+//            PhotoAnnotation *a = [[PhotoAnnotation alloc] init];
+//            a.coordinate = CLLocationCoordinate2DMake(latitude, longitude);
+//            a.actualCoordinate = a.coordinate;
+//            a.mapPoint = MKMapPointForCoordinate(a.coordinate);
+//
+//            [array addObject:a];
+//        }
+//        
+    
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"data" ofType:@"json"]]
+                                        options:0 error:nil];
         
-        NSInteger count = lines.count - 1;
-        
-        for (NSInteger i = 0; i < count; i+=2) { // do 40k points
-            NSString *line = lines[i];
-            
-            NSArray *components = [line componentsSeparatedByString:@","];
-            double latitude = [components[1] doubleValue];
-            double longitude = [components[0] doubleValue];
+        for (NSDictionary *item in json[@"data"]) {
+            double lat = [item[@"latitude"] doubleValue];
+            double lon = [item[@"longitude"] doubleValue];
             
             PhotoAnnotation *a = [[PhotoAnnotation alloc] init];
-            a.coordinate = CLLocationCoordinate2DMake(latitude, longitude);
+            a.coordinate = CLLocationCoordinate2DMake(lat, lon);
             a.actualCoordinate = a.coordinate;
             a.mapPoint = MKMapPointForCoordinate(a.coordinate);
-
+            
             [array addObject:a];
         }
         
         self.photos = [array copy];
-
+        
         dispatch_async(dispatch_get_main_queue(), ^{
-        	[_allAnnotationsMapView addAnnotations:self.photos];
+            [_allAnnotationsMapView addAnnotations:self.photos];
             [self updateVisibleAnnotations];
         });
     });
