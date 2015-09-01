@@ -22,6 +22,7 @@
 
 @property (nonatomic, strong) PhotoAnnotation *clusterAnnotation;
 @property (nonatomic, strong) NSArray *containedAnnotations;
+@property (nonatomic) NSUInteger id;
 
 //- (void)updateSubtitleIfNeeded;
 

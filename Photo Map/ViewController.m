@@ -11,19 +11,16 @@
 #import "PhotoAnnotation.h"
 #import "AnnotationView.h"
 #import "PhotosViewController.h"
+#import "CAAnimation+Blocks.h"
 
 #define PINS_COUNT 30000
 
+@interface ViewController () <UIGestureRecognizerDelegate>
+@property (nonatomic, strong) NSMutableDictionary *annotationsCache;
+@property (nonatomic, strong) NSOperationQueue *queue;
+@end
+
 @implementation ViewController
-
-- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
-{
-    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
-    if (self) {
-
-    }
-    return self;
-}
 
 #pragma mark - UIViewController
 
@@ -34,25 +31,29 @@
     _allAnnotationsMapView = [[MKMapView alloc] initWithFrame:CGRectZero];
     
     [self populateWorldWithAllPhotoAnnotations];
+    
+    UIPinchGestureRecognizer *pinch = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(pinch:)];
+    pinch.delegate = self;
+    
+    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(pan:)];
+    pan.delegate = self;
+    
+    [self.mapView addGestureRecognizer:pinch];
+    [self.mapView addGestureRecognizer:pan];
+    
+    self.mapView.rotateEnabled = NO;
+    self.mapView.showsPointsOfInterest = NO;
+    
+    self.queue = [[NSOperationQueue alloc] init];
+    self.queue.maxConcurrentOperationCount = 1;
 }
 
 - (void)populateWorldWithAllPhotoAnnotations
 {    
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     	
-        NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:PINS_COUNT];
-//        for (int i=0; i<PINS_COUNT; i++) {
-//            float lat = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
-//            float lon = ((float)rand()/(float)(RAND_MAX)) * 360 - 180;
-//            
-//            PhotoAnnotation *a = [[PhotoAnnotation alloc] init];
-//            a.coordinate = CLLocationCoordinate2DMake(lat, lon);
-//            a.actualCoordinate = a.coordinate;
-//            a.mapPoint = MKMapPointForCoordinate(a.coordinate);
-//            
-//            [array addObject:a];
-//        }
-        
+        NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:30000];
+
 //        NSString *data = [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"USA-HotelMotel" ofType:@"csv"] encoding:NSASCIIStringEncoding error:nil];
 //        NSArray *lines = [data componentsSeparatedByString:@"\n"];
 //        
@@ -69,15 +70,21 @@
 //            a.coordinate = CLLocationCoordinate2DMake(latitude, longitude);
 //            a.actualCoordinate = a.coordinate;
 //            a.mapPoint = MKMapPointForCoordinate(a.coordinate);
-//
+//            a.id = i;
+//            
 //            [array addObject:a];
 //        }
-//        
-    
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"data" ofType:@"json"]]
-                                        options:0 error:nil];
         
-        for (NSDictionary *item in json[@"data"]) {
+    
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle]
+                                                                                                     pathForResource:@"data" ofType:@"json"]]
+                                                             options:0 error:nil];
+        
+        NSArray *items = json[@"data"];
+        
+        for (int i=0; i<items.count; i++) {
+            NSDictionary *item = items[i];
+            
             double lat = [item[@"latitude"] doubleValue];
             double lon = [item[@"longitude"] doubleValue];
             
@@ -93,15 +100,24 @@
         
         dispatch_async(dispatch_get_main_queue(), ^{
             [_allAnnotationsMapView addAnnotations:self.photos];
-            [self updateVisibleAnnotations];
+            [self debouncedUpdateVisibleAnnotations];
         });
     });
 }
 
-- (id<MKAnnotation>)annotationInGrid:(MKMapRect)gridMapRect usingAnnotations:(NSSet *)annotations
+- (void)viewDidAppear:(BOOL)animated
 {
-    // First, see if one of the annotations we were already showing is in this MapRect
-    NSSet *visibleAnnotationsInBucket = [self.mapView annotationsInMapRect:gridMapRect];
+    [super viewDidAppear:animated];
+//    [self updateOverlaysWithCellSize:[self cellSizeForZoomScale:<#(MKZoomScale)#>]];
+}
+
+inline static double distanceBetweenMapPoints(MKMapPoint p1, MKMapPoint p2)
+{
+    return sqrt(pow(p1.x - p2.x, 2) + pow(2, p1.y - p2.y));
+}
+
+- (id<MKAnnotation>)annotationInGrid:(MKMapRect)gridMapRect usingAnnotations:(NSSet *)annotations visibleAnnotations:(NSSet *)visibleAnnotationsInBucket
+{
     NSSet *annotationsForGridSet = [annotations objectsPassingTest:^BOOL(id obj, BOOL *stop) {
     	BOOL returnValue = ([visibleAnnotationsInBucket containsObject:obj]);
         if (returnValue)
@@ -116,94 +132,252 @@
     // Otherwise, sort the annotations based on their distance from the center of the grid square,
     // then choose the one closest to the center to show
     MKMapPoint centerMapPoint = MKMapPointMake(MKMapRectGetMidX(gridMapRect), MKMapRectGetMidY(gridMapRect));
-    NSArray *sortedAnnotations = [[annotations allObjects] sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-        CLLocationDistance distance1 = MKMetersBetweenMapPoints(((PhotoAnnotation *)obj1).mapPoint, centerMapPoint);
-        CLLocationDistance distance2 = MKMetersBetweenMapPoints(((PhotoAnnotation *)obj2).mapPoint, centerMapPoint);
-        
-        if (distance1 < distance2) {
-            return NSOrderedAscending;
-        } else if (distance1 > distance2) {
-            return NSOrderedDescending;
-        }
-        
-        return NSOrderedSame;
-    }];
+    NSArray *sortedAnnotations = nil;
+    
+    if (annotations.count > 500) {
+        sortedAnnotations = [[annotations allObjects] sortedArrayUsingComparator:^NSComparisonResult(PhotoAnnotation *obj1, PhotoAnnotation *obj2) {
+            if (obj1.id < obj2.id) {
+                return NSOrderedAscending;
+            } else if (obj1.id > obj2.id) {
+                return NSOrderedDescending;
+            }
+            
+            return NSOrderedSame;
+        }];
+    }
+    else {
+        sortedAnnotations = [[annotations allObjects] sortedArrayUsingComparator:^NSComparisonResult(PhotoAnnotation *obj1, PhotoAnnotation *obj2) {
+            CLLocationDistance distance1 = distanceBetweenMapPoints(obj1.mapPoint, centerMapPoint);
+            CLLocationDistance distance2 = distanceBetweenMapPoints(obj2.mapPoint, centerMapPoint);
+            
+            if (distance1 < distance2) {
+                return NSOrderedAscending;
+            } else if (distance1 > distance2) {
+                return NSOrderedDescending;
+            }
+            
+            return NSOrderedSame;
+        }];
+    }
     
     return [sortedAnnotations objectAtIndex:0];
 }
 
 - (void)updateVisibleAnnotations {
-    // Fix performance and visual clutter by calling update when we change map regions
-    // This value to controls the number of off screen annotations are displayed.
-    // A bigger number means more annotations, less chance of seeing annotation views pop in but decreased performance.
-    // A smaller number means fewer annotations, more chance of seeing annotation views pop in but better performance.
-    const float marginFactor = 1.0;
     
-    // Adjust this roughly based on the dimensions of your annotations views.
-    // Bigger numbers more aggressively coalesce annotations (fewer annotations displayed but better performance).
-    // Numbers too small result in overlapping annotations views and too many annotations on screen.
-    const float bucketSize = [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone ? [UIScreen mainScreen].bounds.size.width / 4 :
-    [UIScreen mainScreen].bounds.size.width / 6;
+    static NSTimeInterval t = 0;
+    const NSTimeInterval bounce = 0.2;
     
-    // Find all the annotations in the visible area + a wide margin to avoid popping annotation views in and out while panning the map.
-    MKMapRect visibleMapRect = [self.mapView visibleMapRect];
-    MKMapRect adjustedVisibleMapRect = MKMapRectInset(visibleMapRect, -marginFactor * visibleMapRect.size.width, -marginFactor * visibleMapRect.size.height);
+    if (t == 0) {
+        t = [[NSDate date] timeIntervalSinceReferenceDate];
+        [self debouncedUpdateVisibleAnnotations];
+        return;
+    }
     
-    // Determine how wide each bucket will be, as a MapRect square
-    CLLocationCoordinate2D leftCoordinate  = [self.mapView convertPoint:CGPointZero toCoordinateFromView:self.view];
-    CLLocationCoordinate2D rightCoordinate = [self.mapView convertPoint:CGPointMake(bucketSize, 0) toCoordinateFromView:self.view];
-    double gridSize = MKMapPointForCoordinate(rightCoordinate).x - MKMapPointForCoordinate(leftCoordinate).x;
-    MKMapRect gridMapRect = MKMapRectMake(0, 0, gridSize, gridSize);
-    
-    // Condense annotations, with a padding of two squares, around the visibleMapRect
-    double startX = floor(MKMapRectGetMinX(adjustedVisibleMapRect) / gridSize) * gridSize;
-    double startY = floor(MKMapRectGetMinY(adjustedVisibleMapRect) / gridSize) * gridSize;
-    double endX   = floor(MKMapRectGetMaxX(adjustedVisibleMapRect) / gridSize) * gridSize;
-    double endY   = floor(MKMapRectGetMaxY(adjustedVisibleMapRect) / gridSize) * gridSize;
-    
-    NSMutableSet *annotationsToDelete = [[NSMutableSet alloc] initWithCapacity:self.mapView.annotations.count];
-    
-    // For each square in our grid, pick one annotation to show
-    for (gridMapRect.origin.y = startY; MKMapRectGetMinY(gridMapRect) <= endY; gridMapRect.origin.y += gridSize) {
-        for (gridMapRect.origin.x = startX; MKMapRectGetMinX(gridMapRect) <= endX; gridMapRect.origin.x += gridSize) {
-            
-            NSSet *visibleAnnotationsInBucket = [self.mapView annotationsInMapRect:gridMapRect];
-            NSMutableSet *allAnnotationsInBucket = [[_allAnnotationsMapView annotationsInMapRect:gridMapRect] mutableCopy];
-            
-            if (allAnnotationsInBucket.count > 0) {
-                PhotoAnnotation *annotationForGrid = (PhotoAnnotation *)[self annotationInGrid:gridMapRect
-                                                                              usingAnnotations:allAnnotationsInBucket];
-                
-                [allAnnotationsInBucket removeObject:annotationForGrid];
-                
-                // Give the annotationForGrid a reference to all the annotations it will represent
-                annotationForGrid.containedAnnotations = [allAnnotationsInBucket allObjects];
-                
-                [self.mapView addAnnotation:annotationForGrid];
-                
-                for (PhotoAnnotation *annotation in allAnnotationsInBucket) {
-                    // Give all the other annotations a reference to the one which is representing them
-                    annotation.clusterAnnotation = annotationForGrid;
-                    annotation.containedAnnotations = nil;
-                    
-                    // Remove annotations which we've decided to cluster
-                    if ([visibleAnnotationsInBucket containsObject:annotation]) {
-                        //[self.mapView removeAnnotation:annotation];
-                        
-                        CLLocationCoordinate2D actualCoordinate = annotation.coordinate;
-                        [UIView animateWithDuration:0.3 animations:^{
-                            annotation.coordinate = annotation.clusterAnnotation.coordinate;
-                        } completion:^(BOOL finished) {
-                            annotation.coordinate = actualCoordinate;
-                            [self.mapView removeAnnotation:annotation];
-                        }];
-                    }
-                }
-            }
-        }
+    NSTimeInterval now = [[NSDate date] timeIntervalSinceReferenceDate];
+    if (now - t > bounce) {
+        // call to actual update no often than bounce time
+        [self debouncedUpdateVisibleAnnotations];
     }
 }
 
+- (void)invalidateAnnotationsCacheWithNewZoomScale:(MKZoomScale)zoomScale
+{
+//    NSInteger zoomLevel = TBZoomScaleToZoomLevel(zoomScale);
+//    double cellSize = MIN(MKMapSizeWorld.height, MKMapSizeWorld.width) / (3 * pow(2, zoomLevel));
+//    
+//    NSInteger cellsCountX = ceil(MKMapSizeWorld.width / cellSize);
+//    NSInteger cellsCountY = ceil(MKMapSizeWorld.height / cellSize);
+
+    [self.queue cancelAllOperations];
+    self.annotationsCache = [[NSMutableDictionary alloc] init];
+}
+
+- (id)cachedAnnotationsForX:(NSInteger)x y:(NSInteger)y
+{
+    NSDictionary *ys = nil;
+    @synchronized(self.annotationsCache) {
+        ys = [self.annotationsCache[@(x)] copy];
+    }
+    
+    return ys[@(y)];
+}
+
+- (void)setAnnotations:(id)annotations forX:(NSInteger)x y:(NSInteger)y
+{
+    if (annotations == nil) {
+        return;
+    }
+    
+    @synchronized(self.annotationsCache) {
+        NSMutableDictionary *ys = self.annotationsCache[@(x)];
+        if (ys == nil) {
+            ys = [[NSMutableDictionary alloc] init];
+        }
+        ys[@(y)] = annotations;
+        
+        self.annotationsCache[@(x)] = ys;
+    }
+}
+
+NSInteger zoomScaleToZoomLevel(MKZoomScale scale)
+{
+    double totalTilesAtMaxZoom = MKMapSizeWorld.width / 256.0;
+    NSInteger zoomLevelAtMaxZoom = log2(totalTilesAtMaxZoom);
+    NSInteger zoomLevel = MAX(0, zoomLevelAtMaxZoom + floor(log2f(scale) + 0.5));
+    
+    return zoomLevel;
+}
+
+float cellSizeForZoomScale(MKZoomScale zoomScale)
+{
+    NSInteger zoomLevel = zoomScaleToZoomLevel(zoomScale);
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        return MIN(MKMapSizeWorld.height, MKMapSizeWorld.width) / (2 * pow(2, zoomLevel));
+    }
+    return MIN(MKMapSizeWorld.height, MKMapSizeWorld.width) / (3 * pow(2, zoomLevel));
+}
+
+- (void)debouncedUpdateVisibleAnnotations {
+//    // Fix performance and visual clutter by calling update when we change map regions
+//    // This value to controls the number of off screen annotations are displayed.
+//    // A bigger number means more annotations, less chance of seeing annotation views pop in but decreased performance.
+//    // A smaller number means fewer annotations, more chance of seeing annotation views pop in but better performance.
+//    const float marginFactor = 0.0;
+//    
+//    // Adjust this roughly based on the dimensions of your annotations views.
+//    // Bigger numbers more aggressively coalesce annotations (fewer annotations displayed but better performance).
+//    // Numbers too small result in overlapping annotations views and too many annotations on screen.
+//    const float bucketSize = 40;
+    
+    static double prevZoomScale;
+    
+    double zoomScale = self.mapView.bounds.size.width / self.mapView.visibleMapRect.size.width;
+    double cellSize = cellSizeForZoomScale(zoomScale);
+
+    if (fabs(prevZoomScale - zoomScale) > DBL_EPSILON) {
+        prevZoomScale = zoomScale;
+        NSLog(@"zoom level is now %td", zoomScaleToZoomLevel(zoomScale));
+        
+        [self invalidateAnnotationsCacheWithNewZoomScale:zoomScale];
+    }
+    
+    MKMapRect visibleRect = self.mapView.visibleMapRect;
+    
+    NSInteger minX = MKMapRectGetMinX(visibleRect) / cellSize;
+    NSInteger maxX = MKMapRectGetMaxX(visibleRect) / cellSize + 1;
+    NSInteger minY = MKMapRectGetMinY(visibleRect) / cellSize;
+    NSInteger maxY = MKMapRectGetMaxY(visibleRect) / cellSize + 1;
+    
+    if ([_allAnnotationsMapView annotationsInMapRect:visibleRect].count == 0) {
+        return;
+    }
+    
+//    [self.mapView removeOverlays:self.mapView.overlays];
+    
+    for (NSInteger x = minX; x <= maxX; x++) {
+        for (NSInteger y = minY; y <= maxY; y++) {
+            
+//            MKMapPoint points[4];
+//            points[0] = MKMapPointMake(x * cellSize, y * cellSize);
+//            points[1] = MKMapPointMake(x * cellSize, y * cellSize + cellSize);
+//            points[2] = MKMapPointMake(x * cellSize + cellSize, y * cellSize + cellSize);
+//            points[3] = MKMapPointMake(x * cellSize + cellSize, y * cellSize);
+//            
+//            MKPolygon *polygon = [MKPolygon polygonWithPoints:points count:4];
+//            [self.mapView addOverlay:polygon];
+            
+            MKMapRect gridMapRect = MKMapRectMake(x * cellSize, y * cellSize, cellSize, cellSize);
+            
+            NSSet *visibleAnnotationsInBucket = [self.mapView annotationsInMapRect:gridMapRect];
+            PhotoAnnotation *cached = [self cachedAnnotationsForX:x y:y];
+            if (cached) {
+                if ([visibleAnnotationsInBucket containsObject:cached] == NO) {
+                    [self.mapView addAnnotation:cached];
+                }
+                
+                continue;
+            }
+            
+            [self.queue addOperation:[NSBlockOperation blockOperationWithBlock:^{
+                NSMutableSet *allAnnotationsInBucket = [[_allAnnotationsMapView annotationsInMapRect:gridMapRect] mutableCopy];
+                if (allAnnotationsInBucket.count > 0) {
+                    PhotoAnnotation *annotationForGrid = (PhotoAnnotation *)[self annotationInGrid:gridMapRect
+                                                                                  usingAnnotations:allAnnotationsInBucket
+                                                                                visibleAnnotations:visibleAnnotationsInBucket];
+                    
+                    [allAnnotationsInBucket removeObject:annotationForGrid];
+                    
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self.mapView addAnnotation:annotationForGrid];
+                    });
+                    
+                    [self setAnnotations:annotationForGrid forX:x y:y];
+                    
+                    for (PhotoAnnotation *annotation in allAnnotationsInBucket) {
+                        // Give all the other annotations a reference to the one which is representing them
+                        annotation.clusterAnnotation = annotationForGrid;
+                        
+                        // Remove annotations which we've decided to cluster
+                        if ([visibleAnnotationsInBucket containsObject:annotation]) {
+                            //[self.mapView removeAnnotation:annotation];
+                            
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                [self hideViewWithBounceAnimation:[self.mapView viewForAnnotation:annotation] completion:^(BOOL finished) {
+                                    [self.mapView removeAnnotation:annotation];
+                                }];
+                            });
+                        }
+                    }
+                }
+            }]];
+        }
+    }
+    
+//    // remove annotations that are not visible
+//    NSMutableSet *allAnnotations = [NSMutableSet setWithArray:self.mapView.annotations];
+//    NSSet *visibleAnnotations = [self.mapView annotationsInMapRect:self.mapView.visibleMapRect];
+//    [allAnnotations minusSet:visibleAnnotations];
+//    
+//    [self.mapView removeAnnotations:allAnnotations.allObjects];
+}
+
+- (void)addBounceAnnimationToViewAppear:(UIView *)view
+{
+    CAKeyframeAnimation *bounceAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.scale"];
+    
+    bounceAnimation.values = @[@(0.05), @(1.1), @(0.9), @(1)];
+    
+    bounceAnimation.duration = 0.6;
+    NSMutableArray *timingFunctions = [[NSMutableArray alloc] initWithCapacity:bounceAnimation.values.count];
+    for (NSUInteger i = 0; i < bounceAnimation.values.count; i++) {
+        [timingFunctions addObject:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
+    }
+    [bounceAnimation setTimingFunctions:timingFunctions.copy];
+    bounceAnimation.removedOnCompletion = NO;
+    
+    [view.layer addAnimation:bounceAnimation forKey:@"bounce"];
+}
+
+- (void)hideViewWithBounceAnimation:(UIView *)view completion:(void (^)(BOOL finished))completion;
+{
+    CAKeyframeAnimation *bounceAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.scale"];
+    
+    bounceAnimation.values = @[@1, @0.9, @1.1, @0.05] ;
+    
+    bounceAnimation.duration = 0.6;
+    
+    NSMutableArray *timingFunctions = [[NSMutableArray alloc] initWithCapacity:bounceAnimation.values.count];
+    for (NSUInteger i = 0; i < bounceAnimation.values.count; i++) {
+        [timingFunctions addObject:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
+    }
+    
+    [bounceAnimation setTimingFunctions:timingFunctions.copy];
+    bounceAnimation.removedOnCompletion = NO;
+    bounceAnimation.completion = completion;
+    
+    [view.layer addAnimation:bounceAnimation forKey:@"bounce"];
+}
 
 #pragma mark - MKMapViewDelegate
 
@@ -227,23 +401,6 @@
     return nil;
 }
 
-- (void)addBounceAnnimationToView:(UIView *)view
-{
-    CAKeyframeAnimation *bounceAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.scale"];
-    
-    bounceAnimation.values = @[@(0.05), @(1.1), @(0.9), @(1)];
-    
-    bounceAnimation.duration = 0.6;
-    NSMutableArray *timingFunctions = [[NSMutableArray alloc] initWithCapacity:bounceAnimation.values.count];
-    for (NSUInteger i = 0; i < bounceAnimation.values.count; i++) {
-        [timingFunctions addObject:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut]];
-    }
-    [bounceAnimation setTimingFunctions:timingFunctions.copy];
-    bounceAnimation.removedOnCompletion = NO;
-    
-    [view.layer addAnimation:bounceAnimation forKey:@"bounce"];
-}
-
 - (void)mapView:(MKMapView *)mapView didAddAnnotationViews:(NSArray *)views
 {
     for (MKAnnotationView *annotationView in views) {
@@ -254,15 +411,39 @@
         
         if (annotation.clusterAnnotation != nil) {
             // Animate the annotation from it's old container's coordinate, to its actual coordinate
-            CLLocationCoordinate2D actualCoordinate = annotation.coordinate;
-            CLLocationCoordinate2D containerCoordinate = annotation.clusterAnnotation.coordinate;
-            
             annotation.clusterAnnotation = nil;
-            annotation.coordinate = actualCoordinate;
+            annotation.coordinate = annotation.actualCoordinate;
             
-            [self addBounceAnnimationToView:annotationView];
+            [self addBounceAnnimationToViewAppear:annotationView];
         }
     }
+}
+
+- (MKOverlayRenderer *)mapView:(MKMapView *)mapView rendererForOverlay:(id)overlay
+{
+    if([overlay isKindOfClass:[MKPolygon class]]) {
+        MKPolygonRenderer *renderer = [[MKPolygonRenderer alloc] initWithPolygon:(MKPolygon *)overlay];
+        renderer.strokeColor = [[UIColor redColor] colorWithAlphaComponent:0.5];
+        return renderer;
+    } else {
+        return nil;
+    }
+}
+
+#pragma mark - Gesture recognizers
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
+- (void)pan:(UIPanGestureRecognizer *)rec
+{
+    [self updateVisibleAnnotations];
+}
+
+- (void)pinch:(UIPinchGestureRecognizer *)rec
+{
+    [self updateVisibleAnnotations];
 }
 
 @end

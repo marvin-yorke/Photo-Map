@@ -13,6 +13,7 @@
 		585EA0BA1B8F0166008A2560 /* USA-HotelMotel.csv in Resources */ = {isa = PBXBuildFile; fileRef = 585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */; };
 		585EA0BC1B8F1E25008A2560 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */; };
 		585EA0BE1B8F41D3008A2560 /* data.json in Resources */ = {isa = PBXBuildFile; fileRef = 585EA0BD1B8F41D3008A2560 /* data.json */; };
+		585EA0C11B902A2A008A2560 /* CAAnimation+Blocks.m in Sources */ = {isa = PBXBuildFile; fileRef = 585EA0C01B902A2A008A2560 /* CAAnimation+Blocks.m */; };
 		BBA8C3FF177C90D8009C57AE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C3FE177C90D8009C57AE /* UIKit.framework */; };
 		BBA8C401177C90D8009C57AE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C400177C90D8009C57AE /* Foundation.framework */; };
 		BBA8C403177C90D8009C57AE /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBA8C402177C90D8009C57AE /* CoreGraphics.framework */; };
@@ -38,6 +39,8 @@
 		585EA0B91B8F0166008A2560 /* USA-HotelMotel.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "USA-HotelMotel.csv"; sourceTree = "<group>"; };
 		585EA0BB1B8F1E25008A2560 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		585EA0BD1B8F41D3008A2560 /* data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = data.json; sourceTree = SOURCE_ROOT; };
+		585EA0BF1B902A2A008A2560 /* CAAnimation+Blocks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CAAnimation+Blocks.h"; sourceTree = "<group>"; };
+		585EA0C01B902A2A008A2560 /* CAAnimation+Blocks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "CAAnimation+Blocks.m"; sourceTree = "<group>"; };
 		BBA8C3FB177C90D8009C57AE /* Photo Map.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Photo Map.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BBA8C3FE177C90D8009C57AE /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		BBA8C400177C90D8009C57AE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -121,6 +124,8 @@
 				BBA8C40E177C90D8009C57AE /* AppDelegate.m */,
 				BBA8C416177C90D8009C57AE /* ViewController.h */,
 				BBA8C417177C90D8009C57AE /* ViewController.m */,
+				585EA0BF1B902A2A008A2560 /* CAAnimation+Blocks.h */,
+				585EA0C01B902A2A008A2560 /* CAAnimation+Blocks.m */,
 				BBA8C405177C90D8009C57AE /* Supporting Files */,
 				DF3C438D177CE04900C03AE4 /* PhotoAnnotation.h */,
 				DF3C438E177CE04A00C03AE4 /* PhotoAnnotation.m */,
@@ -217,6 +222,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BBA8C40B177C90D8009C57AE /* main.m in Sources */,
+				585EA0C11B902A2A008A2560 /* CAAnimation+Blocks.m in Sources */,
 				585EA0B81B8EEFAE008A2560 /* AnnotationView.m in Sources */,
 				BBA8C40F177C90D8009C57AE /* AppDelegate.m in Sources */,
 				BBA8C418177C90D8009C57AE /* ViewController.m in Sources */,
